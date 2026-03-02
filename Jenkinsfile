@@ -33,9 +33,9 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                // Перезапуск системы в Docker
-                sh 'docker-compose down'
-                sh 'docker-compose up --build -d'
+                // Изменили docker-compose на docker compose
+                sh 'docker compose down'
+                sh 'docker compose up --build -d'
             }
         }
 
