@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    // Этот блок заставит Jenkins скачать и настроить Maven перед выполнением
+    tools {
+        maven 'maven-3.9' 
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -10,7 +15,7 @@ pipeline {
 
         stage('Build Shared Contracts') {
             steps {
-                // Собираем библиотеки-контракты
+                // Заходим в папку с pom.xml и устанавливаем библиотеку
                 sh 'cd SOPstoyak/stoyak-api-contract && mvn clean install'
                 sh 'cd events-contract && mvn clean install'
             }
@@ -36,9 +41,9 @@ pipeline {
 
         stage('API Test') {
             steps {
-                echo 'Waiting for services...'
-                sleep 20
-                // Проверка жизнеспособности
+                echo 'Waiting for services to start...'
+                sleep 30
+                // Проверка, что demo-rest отвечает
                 sh 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/api | grep 200'
             }
         }
@@ -46,10 +51,10 @@ pipeline {
 
     post {
         success {
-            echo 'Зачет получен! Все собралось и работает.'
+            echo 'SUCCESS: Все этапы пройдены, система развернута!'
         }
         failure {
-            echo 'Что-то пошло не так. Проверь логи сборки.'
+            echo 'FAILURE: Ошибка при сборке или деплое.'
         }
     }
 }
