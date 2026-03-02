@@ -2,6 +2,56 @@ pipeline {
     agent any
 
     tools {
+        maven 'maven-3.9' // Имя должно совпадать с настройками в Manage Jenkins -> Tools
+    }
+
+    stages {
+        stage('Build Contracts') {
+            steps {
+                // Устанавливаем библиотеки в локальный репозиторий .m2
+                sh 'cd SOPstoyak/stoyak-api-contract && mvn clean install'
+                sh 'cd events-contract && mvn clean install'
+            }
+        }
+
+        stage('Build Services') {
+            steps {
+                // Сборка всех 4-х микросервисов (создание папок target)
+                sh 'cd demo-rest && mvn clean package -DskipTests'
+                sh 'cd audit-service && mvn clean package -DskipTests'
+                sh 'cd notificationservice && mvn clean package -DskipTests'
+                sh 'cd grpc-server && mvn clean package -DskipTests'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                // Перезапуск всей системы в Docker
+                sh 'docker-compose down'
+                sh 'docker-compose up --build -d'
+            }
+        }
+
+        stage('Smoke Test') {
+            steps {
+                echo 'Ожидание запуска (20s)...'
+                sleep 20
+                // Простая проверка: отвечает ли API код 200
+                sh 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/api | grep 200'
+            }
+        }
+        
+        stage('Manual Approval') {
+            steps {
+                // Пауза для проверки Grafana и Zipkin перед завершением
+                input message: 'Метрики в Grafana (3000) отображаются?', ok: 'Да!'
+            }
+        }
+    }
+}pipeline {
+    agent any
+
+    tools {
         maven 'maven-3.9'
     }
 
