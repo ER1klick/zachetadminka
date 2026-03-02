@@ -1,0 +1,7 @@
+{ "clientId": 1, "queueId": 1, "desiredTime": "2025-12-25T10:00:00", "price": 500, "specialInstructions": "Проверка!!!" }
+
+
+{ "clientId": 1, "queueId": 1, "desiredTime": "2025-12-25T11:00:00", "price": 999, "specialInstructions": "Проверка" }
+
+
+DELETE /api/orders/{id}

@@ -1,0 +1,62 @@
+type User {
+    userId: ID!
+    username: String
+    email: String
+    firstName: String
+    lastName: String
+    rating: Float
+    userType: UserType
+}
+
+type Queue {
+    queueId: ID!
+    name: String
+    address: String
+    description: String
+    workingHours: String
+}
+
+type Order {
+    orderId: ID!
+    clientId: ID
+    runnerId: ID
+    queue: Queue
+    status: String
+    price: Float
+    createdAt: String
+}
+
+enum UserType {
+    CLIENT
+    RUNNER
+}
+
+type Query {
+    userById(id: ID!): User
+    queueById(id: ID!): Queue
+    orderById(id: ID!): Order
+    allQueues: [Queue]
+}
+
+input UserInput {
+    username: String!
+    email: String!
+    password: String!
+    phoneNumber: String
+    firstName: String
+    lastName: String
+    userType: UserType!
+}
+
+input OrderInput {
+    clientId: ID!
+    queueId: ID!
+    price: Float!
+    desiredTime: String!
+    specialInstructions: String
+}
+
+type Mutation {
+    createUser(input: UserInput!): User
+    createOrder(input: OrderInput!): Order
+}

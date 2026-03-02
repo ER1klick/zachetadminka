@@ -1,0 +1,123 @@
+version: '3.8'
+
+services:
+  # === ИНФРАСТРУКТУРА ===
+
+  # Брокер сообщений
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # Порт для обмена сообщениями
+      - "15672:15672" # Порт для админки
+    networks:
+      - microservices-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Система трассировки (Tracing)
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - microservices-net
+
+  # Сборщик метрик
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - microservices-net
+
+  # Визуализация метрик (Графики)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - microservices-net
+    depends_on:
+      - prometheus
+
+  # === ВАШИ МИКРОСЕРВИСЫ ===
+
+  # Сервис аналитики (gRPC сервер)
+  analytics-service:
+    build: ./grpc-server
+    container_name: analytics-service
+    ports:
+       - "9091:9090" # gRPC
+       - "8080:8080" # Метрики (Prometheus будет стучаться сюда)
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+    networks:
+      - microservices-net
+
+  # Сервис аудита (Слушатель RabbitMQ)
+  audit-service:
+    build: ./audit-service
+    container_name: audit-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SERVER_PORT=8082
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+  # Сервис уведомлений (WebSockets + RabbitMQ)
+  notification-service:
+    build: ./notificationservice
+    container_name: notification-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SERVER_PORT=8083
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+  # Основной REST сервис (Издатель RabbitMQ + gRPC клиент)
+  demo-rest:
+    build: ./demo-rest # Убедитесь, что имя папки совпадает с вашим проектом
+    container_name: demo-rest
+    ports:
+      - "8081:8081"
+    environment:
+      - SERVER_PORT=8081
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - GRPC_CLIENT_ANALYTICS-SERVICE_ADDRESS=static://analytics-service:9090
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      analytics-service:
+        condition: service_started
+    networks:
+      - microservices-net
+
+# Общая сеть для взаимодействия
+networks:
+  microservices-net:
+    driver: bridge

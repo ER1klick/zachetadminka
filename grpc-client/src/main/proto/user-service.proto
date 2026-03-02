@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package edu.rutmiit.demo.grpc;
+
+option java_multiple_files = true;
+option java_package = "edu.rutmiit.demo.grpc";
+option java_outer_classname = "UserServiceProto";
+
+message User {
+  int64 id = 1;
+  string username = 2;
+  string email = 3;
+}
+
+message Badge {
+  string name = 1;
+  string description = 2;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string email = 2;
+}
+
+message CreateUserResponse {
+  User user = 1;
+}
+
+message UpdateUserRequest {
+  int64 id = 1;
+  string new_username = 2;
+}
+
+message UpdateUserResponse {
+  User user = 1;
+}
+
+message GetUserBadgesRequest {
+  int64 user_id = 1;
+}
+
+message GetUserBadgesResponse {
+  repeated Badge badges = 1;
+}
+
+service UserService {
+  rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
+  rpc UpdateUser (UpdateUserRequest) returns (UpdateUserResponse);
+  rpc GetUserBadges (GetUserBadgesRequest) returns (GetUserBadgesResponse);
+}

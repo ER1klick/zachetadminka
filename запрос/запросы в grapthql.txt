@@ -1,0 +1,36 @@
+query GetOrderAndAvailableQueues {
+  orderById(id: "1") {
+    orderId
+    status
+    price
+    createdAt
+    queue {
+      name
+      address
+    }
+  }
+  
+  allQueues {
+    queueId
+    name
+  }
+}
+
+
+
+
+
+mutation CreateNewRunner {
+  createUser(input: {
+    username: "new_runner_01"
+    email: "runner01@example.com"
+    password: "password123"
+    firstName: "Елена"
+    lastName: "Сидорова"
+    userType: RUNNER
+  }) {
+    userId
+    username
+    rating
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "clientId": 1,
+  "queueId": 1,
+  "desiredTime": "2025-12-20T15:00:00",
+  "price": 1000,
+  "specialInstructions": "Проверка RabbitMQ"
+}
+
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+
+
+http://localhost:15672/#/

@@ -1,0 +1,9 @@
+URL: http://localhost:8080/api/notifications/send
+
+
+
+Body json
+{
+  "userId": "ID",
+  "message": "Это секретное сообщение только для тебя!"
+}
