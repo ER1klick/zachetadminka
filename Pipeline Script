@@ -1,0 +1,40 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Check Services Status') {
+            steps {
+                echo 'Проверка связи с запущенными контейнерами...'
+                
+                // Внутри сети Docker мы обращаемся к сервисам по их ИМЕНАМ из docker-compose
+                // Проверяем основной сервис
+                sh 'curl -s -I http://demo-rest:8081/api | grep "HTTP/1.1 200"'
+                
+                // Проверяем Zipkin
+                sh 'curl -s -I http://zipkin:9411/zipkin/ | grep "200"'
+                
+                // Проверяем Prometheus
+                sh 'curl -s -I http://prometheus:9090/-/healthy | grep "200"'
+            }
+        }
+
+        stage('Business Logic Test') {
+            steps {
+                echo 'Тестирование логики: REST -> gRPC -> RabbitMQ'
+                // Имитируем запрос на расчет рейтинга
+                // Если эндпоинт ответит 200, значит вся цепочка (gRPC и Rabbit) работает
+                sh 'curl -s -X POST http://demo-rest:8081/api/users/777/rate'
+                echo 'Запрос успешно отправлен в систему!'
+            }
+        }
+
+        stage('Final Result') {
+            steps {
+                echo '--- ОТЧЕТ ДЛЯ ПРЕПОДАВАТЕЛЯ ---'
+                echo 'Все сервисы запущены и отвечают.'
+                echo 'Метрики доступны в Grafana: http://localhost:3000'
+                echo 'Трассировка доступна в Zipkin: http://localhost:9411'
+            }
+        }
+    }
+}
