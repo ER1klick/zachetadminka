@@ -33,9 +33,10 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                // Изменили docker-compose на docker compose
-                sh 'docker compose down'
-                sh 'docker compose up --build -d'
+                // Используем docker-compose (с дефисом)
+                // Добавляем || true, чтобы билд не падал, если нечего останавливать (первый запуск)
+                sh 'docker-compose down || true'
+                sh 'docker-compose up --build -d'
             }
         }
 
