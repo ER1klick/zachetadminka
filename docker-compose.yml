@@ -1,15 +1,27 @@
 version: '3.8'
 
 services:
-  # === ИНФРАСТРУКТУРА ===
+  # === АВТОМАТИЗАЦИЯ (CI/CD) ===
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    user: root
+    ports:
+      - "9000:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock # Доступ к докеру хоста
+    networks:
+      - microservices-net
 
-  # Брокер сообщений
+  # === ИНФРАСТРУКТУРА ===
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: rabbitmq
     ports:
-      - "5672:5672"   # Порт для обмена сообщениями
-      - "15672:15672" # Порт для админки
+      - "5672:5672"
+      - "15672:15672"
     networks:
       - microservices-net
     healthcheck:
@@ -18,7 +30,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Система трассировки (Tracing)
   zipkin:
     image: openzipkin/zipkin
     container_name: zipkin
@@ -27,7 +38,6 @@ services:
     networks:
       - microservices-net
 
-  # Сборщик метрик
   prometheus:
     image: prom/prometheus
     container_name: prometheus
@@ -38,7 +48,6 @@ services:
     networks:
       - microservices-net
 
-  # Визуализация метрик (Графики)
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -58,15 +67,15 @@ services:
     build: ./grpc-server
     container_name: analytics-service
     ports:
-       - "9091:9090" # gRPC
-       - "8080:8080" # Метрики (Prometheus будет стучаться сюда)
+      - "9091:9090" # gRPC порт
+      - "8084:8080" # Web порт для метрик
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
       - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
     networks:
       - microservices-net
 
-  # Сервис аудита (Слушатель RabbitMQ)
+  # Сервис аудита
   audit-service:
     build: ./audit-service
     container_name: audit-service
@@ -82,7 +91,7 @@ services:
     networks:
       - microservices-net
 
-  # Сервис уведомлений (WebSockets + RabbitMQ)
+  # Сервис уведомлений (WebSockets)
   notification-service:
     build: ./notificationservice
     container_name: notification-service
@@ -98,9 +107,9 @@ services:
     networks:
       - microservices-net
 
-  # Основной REST сервис (Издатель RabbitMQ + gRPC клиент)
+  # Основной сервис (REST + gRPC клиент)
   demo-rest:
-    build: ./demo-rest # Убедитесь, что имя папки совпадает с вашим проектом
+    build: ./demo-rest
     container_name: demo-rest
     ports:
       - "8081:8081"
@@ -117,7 +126,10 @@ services:
     networks:
       - microservices-net
 
-# Общая сеть для взаимодействия
+# Сети и Тома
 networks:
   microservices-net:
     driver: bridge
+
+volumes:
+  jenkins_home:
